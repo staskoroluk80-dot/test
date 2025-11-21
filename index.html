@@ -80,13 +80,18 @@
             width: 100vw;
             height: 100vh;
         }
-        #clicker-emoji {
+        #clicker-img {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             cursor: pointer;
-            font-size: 120px;
+            width: 220px;
+            max-width: 90vw;
+            max-height: 60vh;
+            border-radius: 24px;
+            box-shadow: 0 4px 18px #0007;
             user-select: none;
+            background: none;
         }
     </style>
 </head>
@@ -106,7 +111,7 @@
     <!-- Головне меню клікера -->
     <div id="menu">
         <div id="clicks">Кліків: 0</div>
-        <div id="clicker-emoji" onclick="incrementClicks()">🕷</div>
+        <img id="clicker-img" src="brawler.png" alt="Brawler" onclick="incrementClicks()" />
     </div>
 
     <script>
