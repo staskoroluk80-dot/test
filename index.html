@@ -3,83 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Мій Онлайн Чат</title>
+    <title>Мій Месенджер</title>
     <style>
-        /* Простий і чистий дизайн */
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #e5ddd5; margin: 0; display: flex; flex-direction: column; height: 100vh; }
+        /* Стилі як у Telegram Web */
+        body { margin: 0; font-family: 'Segoe UI', sans-serif; background-color: #2d2d2d; height: 100vh; overflow: hidden; display: flex; }
         
-        header { background-color: #075e54; color: white; padding: 15px; text-align: center; font-size: 1.2rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
-        
-        #messages { list-style-type: none; margin: 0; padding: 20px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        #messages li { background: white; padding: 10px 15px; border-radius: 10px; box-shadow: 0 1px 1px rgba(0,0,0,0.1); max-width: 70%; align-self: flex-start; word-wrap: break-word; }
-        
-        /* Анімація появи повідомлення */
-        #messages li { animation: fadeIn 0.3s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Екран входу */
+        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1c; display: flex; justify-content: center; align-items: center; z-index: 100; }
+        .login-box { background: #2c2c2c; padding: 40px; border-radius: 10px; text-align: center; color: white; }
+        .login-box input { padding: 10px; border-radius: 5px; border: none; width: 200px; margin-bottom: 10px; }
+        .login-box button { padding: 10px 20px; background: #0088cc; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; }
 
-        form { background: #f0f0f0; padding: 10px; display: flex; gap: 10px; border-top: 1px solid #ccc; }
+        /* Основний інтерфейс */
+        #app { display: flex; width: 100%; height: 100%; display: none; /* Сховано до логіну */ }
+
+        /* Ліва колонка (Контакти) */
+        #sidebar { width: 300px; background: #212121; border-right: 1px solid #0f0f0f; display: flex; flex-direction: column; }
+        .sidebar-header { padding: 20px; color: white; font-weight: bold; background: #2c2c2c; }
+        #user-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; }
+        #user-list li { padding: 15px 20px; color: #fff; cursor: pointer; border-bottom: 1px solid #2c2c2c; display: flex; align-items: center; }
+        #user-list li:hover { background: #2c2c2c; }
+        #user-list li.active { background: #0088cc; }
+        .avatar { width: 40px; height: 40px; background: #555; border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: white; }
+
+        /* Права колонка (Чат) */
+        #chat-area { flex-grow: 1; background: #0e1621; display: flex; flex-direction: column; position: relative; }
+        #chat-header { padding: 15px; background: #212121; color: white; border-bottom: 1px solid #0f0f0f; font-weight: bold; }
         
-        input { flex-grow: 1; padding: 12px; border: 1px solid #ddd; border-radius: 20px; outline: none; font-size: 16px; }
-        input:focus { border-color: #075e54; }
+        #messages { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background-image: url('https://web.telegram.org/img/bg_0.png'); /* Фон як у ТГ */ }
         
-        button { background-color: #075e54; color: white; border: none; padding: 10px 20px; border-radius: 20px; cursor: pointer; font-weight: bold; transition: background 0.2s; }
-        button:hover { background-color: #128c7e; }
+        .message { max-width: 60%; padding: 10px 15px; border-radius: 10px; color: white; font-size: 15px; line-height: 1.4; position: relative; }
+        .message.my { background: #2b5278; align-self: flex-end; border-bottom-right-radius: 0; }
+        .message.other { background: #182533; align-self: flex-start; border-bottom-left-radius: 0; }
+        .msg-author { font-size: 11px; color: #7faccc; margin-bottom: 4px; display: block; }
+
+        /* Форма вводу */
+        #input-area { padding: 15px; background: #212121; display: flex; gap: 10px; }
+        #input-area input { flex-grow: 1; padding: 12px; border-radius: 5px; border: none; background: #0e1621; color: white; }
+        #input-area button { background: #0088cc; color: white; border: none; padding: 0 20px; border-radius: 5px; cursor: pointer; }
+
+        /* Повідомлення про вибір чату */
+        #empty-chat { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #555; }
     </style>
 </head>
 <body>
 
-    <header>
-        💬 Глобальний Чат
-    </header>
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>Вхід</h2>
+            <input type="text" id="username-input" placeholder="Ваше ім'я..." autocomplete="off">
+            <button onclick="login()">Увійти</button>
+        </div>
+    </div>
 
-    <ul id="messages">
-        </ul>
+    <div id="app">
+        <div id="sidebar">
+            <div class="sidebar-header">Користувачі онлайн</div>
+            <ul id="user-list">
+                </ul>
+        </div>
 
-    <form id="form" action="">
-        <input id="input" autocomplete="off" placeholder="Напишіть повідомлення..." />
-        <button>Надіслати</button>
-    </form>
+        <div id="chat-area">
+            <div id="chat-header">Виберіть кому написати</div>
+            <div id="empty-chat">⬅ Виберіть користувача з меню зліва</div>
+            
+            <div id="messages" style="display: none;"></div>
+
+            <form id="input-area" style="display: none;">
+                <input id="msg-input" autocomplete="off" placeholder="Напишіть повідомлення..." />
+                <button>➤</button>
+            </form>
+        </div>
+    </div>
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        // Твоє посилання на Replit вже тут!
+        // !!! Встав сюди своє посилання з REPLIT !!!
         const REPLIT_URL = "https://6a216fcf-12cf-4fac-8b1d-97739aabb946-00-33ambi0sfbjo6.spock.replit.dev";
-
-        // Підключення
+        
         const socket = io(REPLIT_URL);
+        
+        let myNickname = "";
+        let currentChatUser = null; // З ким ми зараз говоримо
+        let chats = {}; // Тут зберігаємо історію переписки: { "UserName": ["msg1", "msg2"] }
 
-        const form = document.getElementById('form');
-        const input = document.getElementById('input');
-        const messages = document.getElementById('messages');
+        // --- Логіка входу ---
+        function login() {
+            const input = document.getElementById('username-input');
+            const name = input.value.trim();
+            if (name) {
+                myNickname = name;
+                socket.emit('login', name);
+            }
+        }
 
-        // Відправка повідомлення
-        form.addEventListener('submit', function(e) {
+        socket.on('login success', () => {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('app').style.display = 'flex';
+        });
+
+        // --- Логіка списку користувачів ---
+        socket.on('update user list', (users) => {
+            const list = document.getElementById('user-list');
+            list.innerHTML = "";
+            
+            users.forEach(user => {
+                if (user === myNickname) return; // Не показуємо себе в списку
+
+                const li = document.createElement('li');
+                // Перша літера імені для аватарки
+                const initial = user.charAt(0).toUpperCase();
+                li.innerHTML = `<div class="avatar">${initial}</div> ${user}`;
+                
+                li.onclick = () => openChat(user, li);
+                list.appendChild(li);
+            });
+        });
+
+        // --- Відкриття чату ---
+        function openChat(user, element) {
+            currentChatUser = user;
+            
+            // Оновлюємо інтерфейс
+            document.getElementById('chat-header').innerText = user;
+            document.getElementById('empty-chat').style.display = 'none';
+            document.getElementById('messages').style.display = 'flex';
+            document.getElementById('input-area').style.display = 'flex';
+
+            // Підсвітка активного користувача
+            document.querySelectorAll('#user-list li').forEach(el => el.classList.remove('active'));
+            if(element) element.classList.add('active');
+
+            renderMessages();
+        }
+
+        // --- Відображення повідомлень ---
+        function renderMessages() {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = "";
+            
+            if (!chats[currentChatUser]) chats[currentChatUser] = []; // Якщо чату ще немає, створюємо
+
+            chats[currentChatUser].forEach(msg => {
+                const div = document.createElement('div');
+                div.classList.add('message');
+                div.classList.add(msg.from === 'Я' ? 'my' : 'other');
+                div.innerText = msg.content;
+                messagesDiv.appendChild(div);
+            });
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // --- Відправка повідомлення ---
+        document.getElementById('input-area').addEventListener('submit', (e) => {
             e.preventDefault();
-            if (input.value) {
-                socket.emit('chat message', input.value);
+            const input = document.getElementById('msg-input');
+            const content = input.value;
+
+            if (content && currentChatUser) {
+                // 1. Відправляємо на сервер
+                socket.emit('private message', { content, to: currentChatUser });
+
+                // 2. Зберігаємо у себе локально
+                if (!chats[currentChatUser]) chats[currentChatUser] = [];
+                chats[currentChatUser].push({ from: 'Я', content: content });
+
+                // 3. Малюємо
+                renderMessages();
                 input.value = '';
             }
         });
 
-        // Отримання повідомлення
-        socket.on('chat message', function(msg) {
-            const item = document.createElement('li');
-            item.textContent = msg;
-            messages.appendChild(item);
-            // Автоматична прокрутка вниз
-            messages.scrollTop = messages.scrollHeight;
+        // --- Отримання повідомлення ---
+        socket.on('private message', ({ content, from }) => {
+            // Зберігаємо в історію
+            if (!chats[from]) chats[from] = [];
+            chats[from].push({ from: from, content: content });
+
+            // Якщо ми зараз дивимось цей чат - оновлюємо екран
+            if (currentChatUser === from) {
+                renderMessages();
+            } else {
+                // Тут можна додати повідомлення про "нове смс" (червона крапка)
+                alert(`Нове повідомлення від ${from}`);
+            }
         });
 
-        // Діагностика підключення
-        socket.on('connect', () => {
-            console.log("Підключено до сервера Replit!");
-        });
-        
-        socket.on('connect_error', (err) => {
-            console.error("Помилка підключення:", err);
-        });
     </script>
-
 </body>
 </html>
