@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Чат з Аватарами</title>
+    <title>Чат (Online/Offline)</title>
     <style>
         /* === БАЗА === */
         * { box-sizing: border-box; }
@@ -12,21 +12,17 @@
         /* === ЕКРАН ВХОДУ === */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1c; display: flex; justify-content: center; align-items: center; z-index: 999; }
         .login-box { background: #2c2c2c; padding: 30px; border-radius: 15px; text-align: center; color: white; width: 90%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
-        
-        /* Стилі для вибору фото */
         .avatar-upload { width: 100px; height: 100px; background: #444; border-radius: 50%; margin: 0 auto 20px; position: relative; cursor: pointer; overflow: hidden; border: 2px dashed #666; display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-        .avatar-upload:hover { border-color: #0088cc; background: #3a3a3a; }
         .avatar-upload img { width: 100%; height: 100%; object-fit: cover; display: none; }
         .avatar-upload span { font-size: 30px; color: #aaa; }
         #file-input { display: none; }
-
         .login-box input[type="text"] { padding: 12px; border-radius: 8px; border: 1px solid #444; background: #222; color: white; width: 100%; margin-bottom: 15px; outline: none; text-align: center; }
         .login-box button { padding: 12px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-weight: bold; }
 
         /* === ГОЛОВНИЙ ЕКРАН === */
         #app { display: flex; width: 100%; height: 100%; display: none; }
 
-        /* Сайдбар */
+        /* САЙДБАР */
         #sidebar { width: 320px; background: #212121; border-right: 1px solid #0f0f0f; display: flex; flex-direction: column; flex-shrink: 0; }
         .sidebar-header { padding: 15px; color: white; font-weight: bold; background: #2c2c2c; height: 60px; display: flex; align-items: center; }
         #user-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
@@ -35,22 +31,30 @@
         #user-list li:hover { background: #2a2a2a; }
         #user-list li.active { background: #2b5278; }
 
-        /* Аватарки в списку */
-        .avatar { width: 50px; height: 50px; border-radius: 50%; margin-right: 15px; background: #555; object-fit: cover; flex-shrink: 0; }
-        .default-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; flex-shrink: 0; font-size: 20px; }
+        /* Стилі аватарки і статусу */
+        .avatar-wrapper { position: relative; margin-right: 15px; }
+        .avatar { width: 50px; height: 50px; border-radius: 50%; background: #555; object-fit: cover; display: block; }
+        .default-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 20px; }
+        
+        /* Індикатор статусу (кружечок) */
+        .status-dot { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #212121; }
+        .online .status-dot { background-color: #00e676; }
+        .offline .status-dot { background-color: #757575; }
+        .offline .avatar, .offline .default-avatar { opacity: 0.5; filter: grayscale(100%); } /* Робимо офлайн сірим */
 
         .user-info { display: flex; flex-direction: column; overflow: hidden; }
         .user-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-status-text { font-size: 12px; margin-top: 3px; }
+        .online .user-status-text { color: #00e676; }
+        .offline .user-status-text { color: #888; }
 
-        /* Чат */
+        /* ЧАТ */
         #chat-area { flex-grow: 1; background: #0e1621; display: flex; flex-direction: column; position: relative; min-width: 0; }
         #chat-header { padding: 0 15px; background: #212121; color: white; border-bottom: 1px solid #0f0f0f; font-weight: bold; height: 60px; display: flex; align-items: center; gap: 10px; }
-        
-        /* Міні-аватар в шапці чату */
         .chat-header-avatar { width: 35px; height: 35px; border-radius: 50%; object-fit: cover; }
+        #chat-status-sub { font-size: 12px; font-weight: normal; color: #888; margin-left: 10px; }
 
         #back-btn { display: none; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
-        
         #messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://web.telegram.org/img/bg_0.png'); background-size: cover; }
         
         .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; color: white; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; display: flex; flex-direction: column; }
@@ -82,9 +86,7 @@
                 <img id="avatar-preview" src="" alt="">
             </label>
             <input type="file" id="file-input" accept="image/*">
-            
-            <p style="color: #bbb; font-size: 13px; margin: 5px 0 15px;">Натисніть на камеру, щоб додати фото</p>
-            
+            <p style="color: #bbb; font-size: 13px; margin: 5px 0 15px;">Додайте фото</p>
             <input type="text" id="username-input" placeholder="Ваше ім'я..." autocomplete="off">
             <button onclick="login()">Увійти</button>
         </div>
@@ -100,7 +102,10 @@
             <div id="chat-header">
                 <button id="back-btn" onclick="closeChat()">⬅</button>
                 <img id="chat-header-img" class="chat-header-avatar" style="display:none;">
-                <span id="chat-title">Чат</span>
+                <div>
+                    <span id="chat-title">Чат</span>
+                    <span id="chat-status-sub"></span>
+                </div>
             </div>
             
             <div id="messages" style="display: none;"></div>
@@ -114,52 +119,37 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        // !!! ТВОЄ ПОСИЛАННЯ !!!
+        // !!! ТВОЄ ПОСИЛАННЯ (Replit) !!!
         const REPLIT_URL = "https://6a216fcf-12cf-4fac-8b1d-97739aabb946-00-33ambi0sfbjo6.spock.replit.dev";
         
         const socket = io(REPLIT_URL);
         
         let myNickname = "";
-        let myAvatar = null; // Тут буде Base64 картинка
+        let myAvatar = null;
         let currentChatUser = null;
-        let userAvatars = {}; // Кеш для аватарок інших юзерів { "Name": "base64" }
+        let userAvatars = {};
+        let userStatuses = {}; // Зберігаємо статус користувачів
         let chats = {};
 
-        // === 1. ОБРОБКА ФОТО (Стиснення) ===
+        // Обробка фото
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    // Створюємо "віртуальне полотно" для зменшення картинки
                     const canvas = document.createElement('canvas');
                     const ctx = canvas.getContext('2d');
-                    
-                    // Задаємо макс розмір (100x100 пікселів достатньо для аватарки)
                     const maxSize = 150;
-                    let width = img.width;
-                    let height = img.height;
-                    
-                    if (width > height) {
-                        if (width > maxSize) { height *= maxSize / width; width = maxSize; }
-                    } else {
-                        if (height > maxSize) { width *= maxSize / height; height = maxSize; }
-                    }
-                    
-                    canvas.width = width;
-                    canvas.height = height;
+                    let width = img.width; let height = img.height;
+                    if (width > height) { if (width > maxSize) { height *= maxSize / width; width = maxSize; } } 
+                    else { if (height > maxSize) { width *= maxSize / height; height = maxSize; } }
+                    canvas.width = width; canvas.height = height;
                     ctx.drawImage(img, 0, 0, width, height);
-                    
-                    // Конвертуємо в рядок (Base64) низької якості
                     myAvatar = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    // Показуємо прев'ю
                     const preview = document.getElementById('avatar-preview');
-                    preview.src = myAvatar;
-                    preview.style.display = 'block';
+                    preview.src = myAvatar; preview.style.display = 'block';
                     document.querySelector('.avatar-upload span').style.display = 'none';
                 }
                 img.src = event.target.result;
@@ -167,13 +157,11 @@
             reader.readAsDataURL(file);
         });
 
-        // === 2. ВХІД ===
         function login() {
             const input = document.getElementById('username-input');
             const name = input.value.trim();
             if (name) {
                 myNickname = name;
-                // Відправляємо об'єкт з іменем І аватаркою
                 socket.emit('login', { name: name, avatar: myAvatar });
             }
         }
@@ -183,23 +171,32 @@
             document.getElementById('app').style.display = 'flex';
         });
 
-        // === 3. СПИСОК КОРИСТУВАЧІВ ===
+        // ОНОВЛЕНИЙ СПИСОК КОРИСТУВАЧІВ
         socket.on('update user list', (users) => {
             const list = document.getElementById('user-list');
             list.innerHTML = "";
             
+            // Сортуємо: спочатку online, потім offline
+            users.sort((a, b) => {
+                if (a.status === 'online' && b.status === 'offline') return -1;
+                if (a.status === 'offline' && b.status === 'online') return 1;
+                return 0;
+            });
+
             users.forEach(userObj => {
-                // userObj тепер виглядає так: { name: "Ivan", avatar: "..." }
                 const name = userObj.name;
                 const avatar = userObj.avatar;
+                const status = userObj.status; // 'online' або 'offline'
                 
                 if (name === myNickname) return;
 
-                // Зберігаємо аватарку в пам'ять
                 userAvatars[name] = avatar;
+                userStatuses[name] = status;
 
                 const li = document.createElement('li');
-                
+                // Додаємо клас статусу до LI, щоб міняти колір через CSS
+                li.classList.add(status);
+
                 let avatarHTML;
                 if (avatar) {
                     avatarHTML = `<img src="${avatar}" class="avatar">`;
@@ -208,25 +205,38 @@
                     avatarHTML = `<div class="default-avatar">${initial}</div>`;
                 }
 
+                // Переклад статусу
+                const statusText = status === 'online' ? 'в мережі' : 'був(ла) нещодавно';
+
                 li.innerHTML = `
-                    ${avatarHTML}
+                    <div class="avatar-wrapper">
+                        ${avatarHTML}
+                        <div class="status-dot"></div>
+                    </div>
                     <div class="user-info">
                         <div class="user-name">${name}</div>
+                        <div class="user-status-text">${statusText}</div>
                     </div>
                 `;
                 
-                li.onclick = () => openChat(name, li);
+                li.onclick = () => openChat(name, li, statusText);
                 list.appendChild(li);
+
+                // Оновлюємо заголовок чату, якщо він зараз відкритий
+                if(currentChatUser === name) {
+                     document.getElementById('chat-status-sub').innerText = statusText;
+                }
             });
         });
 
-        // === 4. ВІДКРИТТЯ ЧАТУ ===
-        function openChat(user, element) {
+        function openChat(user, element, statusText) {
             currentChatUser = user;
             
             document.getElementById('chat-title').innerText = user;
-            
-            // Ставимо аватарку в шапку чату
+            // Показуємо статус у заголовку
+            const currentStatus = userStatuses[user] === 'online' ? 'в мережі' : 'був(ла) нещодавно';
+            document.getElementById('chat-status-sub').innerText = currentStatus;
+
             const headerImg = document.getElementById('chat-header-img');
             if (userAvatars[user]) {
                 headerImg.src = userAvatars[user];
@@ -252,13 +262,10 @@
             currentChatUser = null;
         }
 
-        // === 5. ЧАТ ===
         function renderMessages() {
             const messagesDiv = document.getElementById('messages');
             messagesDiv.innerHTML = "";
-            
             if (!chats[currentChatUser]) chats[currentChatUser] = [];
-
             chats[currentChatUser].forEach(msg => {
                 const div = document.createElement('div');
                 div.classList.add('message');
@@ -273,13 +280,10 @@
             e.preventDefault();
             const input = document.getElementById('msg-input');
             const content = input.value;
-
             if (content && currentChatUser) {
                 socket.emit('private message', { content, to: currentChatUser });
-
                 if (!chats[currentChatUser]) chats[currentChatUser] = [];
                 chats[currentChatUser].push({ from: 'Я', content: content });
-
                 renderMessages();
                 input.value = '';
                 input.focus();
@@ -287,12 +291,9 @@
         });
 
         socket.on('private message', ({ content, from, avatar }) => {
-            // Оновлюємо аватар, якщо він раптом змінився
             if (avatar) userAvatars[from] = avatar;
-
             if (!chats[from]) chats[from] = [];
             chats[from].push({ from: from, content: content });
-
             if (currentChatUser === from) {
                 renderMessages();
             } else {
