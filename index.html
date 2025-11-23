@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Чат (Online/Offline)</title>
+    <title>Чат (Видалення контактів)</title>
     <style>
         /* === БАЗА === */
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #2d2d2d; height: 100dvh; width: 100vw; overflow: hidden; display: flex; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; /* Прибирає синій квадрат при натисканні на Android */ }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #2d2d2d; height: 100dvh; width: 100vw; overflow: hidden; display: flex; user-select: none; /* Щоб текст не виділявся при довгому натисканні */ }
 
         /* === ЕКРАН ВХОДУ === */
         #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1c; display: flex; justify-content: center; align-items: center; z-index: 999; }
@@ -24,25 +24,28 @@
 
         /* САЙДБАР */
         #sidebar { width: 320px; background: #212121; border-right: 1px solid #0f0f0f; display: flex; flex-direction: column; flex-shrink: 0; }
-        .sidebar-header { padding: 15px; color: white; font-weight: bold; background: #2c2c2c; height: 60px; display: flex; align-items: center; }
+        .sidebar-header { padding: 15px; color: white; font-weight: bold; background: #2c2c2c; height: 60px; display: flex; align-items: center; justify-content: space-between; }
+        .reset-btn { font-size: 11px; background: #444; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
+        
         #user-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
         
-        #user-list li { padding: 10px 15px; color: #fff; cursor: pointer; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; transition: 0.2s; }
+        #user-list li { padding: 10px 15px; color: #fff; cursor: pointer; border-bottom: 1px solid #2a2a2a; display: flex; align-items: center; transition: 0.2s; position: relative; }
         #user-list li:hover { background: #2a2a2a; }
         #user-list li.active { background: #2b5278; }
+        
+        /* Ефект натискання */
+        #user-list li:active { background: #1f1f1f; transform: scale(0.98); }
 
-        /* Стилі аватарки і статусу */
-        .avatar-wrapper { position: relative; margin-right: 15px; }
+        .avatar-wrapper { position: relative; margin-right: 15px; pointer-events: none; }
         .avatar { width: 50px; height: 50px; border-radius: 50%; background: #555; object-fit: cover; display: block; }
         .default-avatar { width: 50px; height: 50px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; font-size: 20px; }
         
-        /* Індикатор статусу (кружечок) */
         .status-dot { position: absolute; bottom: 2px; right: 2px; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #212121; }
         .online .status-dot { background-color: #00e676; }
         .offline .status-dot { background-color: #757575; }
-        .offline .avatar, .offline .default-avatar { opacity: 0.5; filter: grayscale(100%); } /* Робимо офлайн сірим */
+        .offline .avatar, .offline .default-avatar { opacity: 0.5; filter: grayscale(100%); }
 
-        .user-info { display: flex; flex-direction: column; overflow: hidden; }
+        .user-info { display: flex; flex-direction: column; overflow: hidden; pointer-events: none; }
         .user-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .user-status-text { font-size: 12px; margin-top: 3px; }
         .online .user-status-text { color: #00e676; }
@@ -65,7 +68,6 @@
         #input-area input { flex-grow: 1; padding: 12px 20px; border-radius: 25px; border: none; background: #0e1621; color: white; font-size: 16px; outline: none; }
         #input-area button { background: #0088cc; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; flex-shrink: 0; }
 
-        /* Мобільна адаптація */
         @media (max-width: 850px) {
             #sidebar { width: 100%; }
             #chat-area { width: 100%; }
@@ -94,8 +96,12 @@
 
     <div id="app">
         <div id="sidebar">
-            <div class="sidebar-header">Контакти</div>
+            <div class="sidebar-header">
+                Контакти
+                <button class="reset-btn" onclick="resetHiddenUsers()">Скинути</button>
+            </div>
             <ul id="user-list"></ul>
+            <p style="text-align: center; color: #555; font-size: 12px; margin-top: 10px;">Затисніть контакт для видалення</p>
         </div>
 
         <div id="chat-area">
@@ -119,7 +125,7 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        // !!! ТВОЄ ПОСИЛАННЯ (Replit) !!!
+        // !!! ТВОЄ ПОСИЛАННЯ REPLIT !!!
         const REPLIT_URL = "https://6a216fcf-12cf-4fac-8b1d-97739aabb946-00-33ambi0sfbjo6.spock.replit.dev";
         
         const socket = io(REPLIT_URL);
@@ -128,10 +134,37 @@
         let myAvatar = null;
         let currentChatUser = null;
         let userAvatars = {};
-        let userStatuses = {}; // Зберігаємо статус користувачів
+        let userStatuses = {};
         let chats = {};
 
-        // Обробка фото
+        // === 1. ЛОГІКА ВИДАЛЕНИХ КОРИСТУВАЧІВ ===
+        // Завантажуємо з пам'яті браузера список тих, кого ми видалили
+        let hiddenUsers = JSON.parse(localStorage.getItem('hiddenUsers')) || [];
+
+        function hideUser(userName) {
+            if (confirm(`Видалити чат з ${userName} зі списку?`)) {
+                hiddenUsers.push(userName);
+                localStorage.setItem('hiddenUsers', JSON.stringify(hiddenUsers));
+                // Примусово оновлюємо список
+                requestUserListUpdate();
+            }
+        }
+
+        function resetHiddenUsers() {
+            if (confirm("Повернути всіх видалених користувачів?")) {
+                hiddenUsers = [];
+                localStorage.setItem('hiddenUsers', JSON.stringify([]));
+                requestUserListUpdate();
+            }
+        }
+
+        // Ця функція допомагає нам не чекати сигналу від сервера, а використати останні дані
+        let lastUserList = [];
+        function requestUserListUpdate() {
+            renderUserList(lastUserList);
+        }
+
+        // === 2. ОБРОБКА ФОТО ===
         document.getElementById('file-input').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
@@ -171,12 +204,17 @@
             document.getElementById('app').style.display = 'flex';
         });
 
-        // ОНОВЛЕНИЙ СПИСОК КОРИСТУВАЧІВ
+        // === 3. СПИСОК КОРИСТУВАЧІВ ===
         socket.on('update user list', (users) => {
+            lastUserList = users; // Зберігаємо оригінальний список від сервера
+            renderUserList(users);
+        });
+
+        function renderUserList(users) {
             const list = document.getElementById('user-list');
             list.innerHTML = "";
             
-            // Сортуємо: спочатку online, потім offline
+            // Сортуємо
             users.sort((a, b) => {
                 if (a.status === 'online' && b.status === 'offline') return -1;
                 if (a.status === 'offline' && b.status === 'online') return 1;
@@ -185,16 +223,18 @@
 
             users.forEach(userObj => {
                 const name = userObj.name;
-                const avatar = userObj.avatar;
-                const status = userObj.status; // 'online' або 'offline'
                 
+                // !!! ФІЛЬТРАЦІЯ: Якщо користувач у списку видалених - пропускаємо його
+                if (hiddenUsers.includes(name)) return;
                 if (name === myNickname) return;
 
+                const avatar = userObj.avatar;
+                const status = userObj.status;
+                
                 userAvatars[name] = avatar;
                 userStatuses[name] = status;
 
                 const li = document.createElement('li');
-                // Додаємо клас статусу до LI, щоб міняти колір через CSS
                 li.classList.add(status);
 
                 let avatarHTML;
@@ -205,7 +245,6 @@
                     avatarHTML = `<div class="default-avatar">${initial}</div>`;
                 }
 
-                // Переклад статусу
                 const statusText = status === 'online' ? 'в мережі' : 'був(ла) нещодавно';
 
                 li.innerHTML = `
@@ -219,21 +258,51 @@
                     </div>
                 `;
                 
+                // ЗВИЧАЙНИЙ КЛІК - відкрити чат
                 li.onclick = () => openChat(name, li, statusText);
+
+                // === ДОДАЄМО "ДОВГЕ НАТИСКАННЯ" ===
+                addLongPressEvent(li, () => hideUser(name));
+
                 list.appendChild(li);
 
-                // Оновлюємо заголовок чату, якщо він зараз відкритий
                 if(currentChatUser === name) {
                      document.getElementById('chat-status-sub').innerText = statusText;
                 }
             });
-        });
+        }
+
+        // Функція для визначення довгого натискання
+        function addLongPressEvent(element, callback) {
+            let timer;
+            
+            // Для телефонів (Touch)
+            element.addEventListener('touchstart', (e) => {
+                timer = setTimeout(() => {
+                    timer = null;
+                    callback();
+                }, 800); // 800 мілісекунд (майже секунда)
+            });
+
+            element.addEventListener('touchend', () => {
+                if (timer) clearTimeout(timer); // Якщо відпустили палець раніше - скасовуємо
+            });
+
+            element.addEventListener('touchmove', () => {
+                if (timer) clearTimeout(timer); // Якщо почали гортати список - скасовуємо
+            });
+
+            // Для комп'ютерів (Правий клік миші)
+            element.addEventListener('contextmenu', (e) => {
+                e.preventDefault(); // Забороняємо стандартне меню браузера
+                callback();
+            });
+        }
 
         function openChat(user, element, statusText) {
             currentChatUser = user;
             
             document.getElementById('chat-title').innerText = user;
-            // Показуємо статус у заголовку
             const currentStatus = userStatuses[user] === 'online' ? 'в мережі' : 'був(ла) нещодавно';
             document.getElementById('chat-status-sub').innerText = currentStatus;
 
