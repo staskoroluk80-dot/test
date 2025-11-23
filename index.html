@@ -5,65 +5,108 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Мій Месенджер</title>
     <style>
-        /* Базові стилі */
+        /* === БАЗОВІ НАЛАШТУВАННЯ === */
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #2d2d2d; height: 100vh; overflow: hidden; display: flex; }
         
-        /* Екран входу */
-        #login-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1c1c1c; display: flex; justify-content: center; align-items: center; z-index: 200; }
-        .login-box { background: #2c2c2c; padding: 30px; border-radius: 10px; text-align: center; color: white; width: 90%; max-width: 400px; }
-        .login-box input { padding: 12px; border-radius: 5px; border: none; width: 100%; margin-bottom: 15px; font-size: 16px; }
-        .login-box button { padding: 12px; background: #0088cc; color: white; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
+        body { 
+            margin: 0; 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background-color: #2d2d2d; 
+            /* dvh - це висота екрану без урахування панелі браузера (для телефонів) */
+            height: 100dvh; 
+            width: 100vw;
+            overflow: hidden; 
+            display: flex; 
+        }
 
-        /* Основний контейнер */
-        #app { display: flex; width: 100%; height: 100%; display: none; position: relative; }
+        /* ЕКРАН ВХОДУ */
+        #login-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #1c1c1c; display: flex; justify-content: center; align-items: center; 
+            z-index: 999; 
+        }
+        .login-box { background: #2c2c2c; padding: 30px; border-radius: 12px; text-align: center; color: white; width: 90%; max-width: 350px; }
+        .login-box input { padding: 15px; border-radius: 8px; border: none; width: 100%; margin-bottom: 15px; font-size: 16px; outline: none; }
+        .login-box button { padding: 15px; background: #0088cc; color: white; border: none; border-radius: 8px; cursor: pointer; width: 100%; font-size: 16px; font-weight: bold; }
 
-        /* --- Ліва колонка (Контакти) --- */
-        #sidebar { width: 300px; background: #212121; border-right: 1px solid #0f0f0f; display: flex; flex-direction: column; flex-shrink: 0; transition: transform 0.3s ease; }
-        .sidebar-header { padding: 15px; color: white; font-weight: bold; background: #2c2c2c; height: 60px; display: flex; align-items: center; }
+        /* ОСНОВНИЙ КОНТЕЙНЕР */
+        #app { display: flex; width: 100%; height: 100%; display: none; }
+
+        /* === ЛІВА КОЛОНКА (СПИСОК) === */
+        #sidebar { 
+            width: 320px; 
+            background: #212121; 
+            border-right: 1px solid #0f0f0f; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; /* Щоб не стискався */
+        }
+        
+        .sidebar-header { padding: 0 20px; color: white; font-weight: bold; background: #2c2c2c; height: 60px; display: flex; align-items: center; border-bottom: 1px solid #111; }
         #user-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; flex-grow: 1; }
-        #user-list li { padding: 10px 15px; color: #fff; cursor: pointer; border-bottom: 1px solid #2c2c2c; display: flex; align-items: center; }
+        
+        #user-list li { padding: 15px; color: #fff; cursor: pointer; border-bottom: 1px solid #2c2c2c; display: flex; align-items: center; transition: 0.2s; }
         #user-list li:hover { background: #2c2c2c; }
         #user-list li.active { background: #2b5278; }
-        .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: white; flex-shrink: 0; }
-        .user-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        
+        .avatar { width: 45px; height: 45px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; margin-right: 15px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: bold; color: white; flex-shrink: 0; }
+        .user-info { display: flex; flex-direction: column; overflow: hidden; }
+        .user-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .user-status { font-size: 12px; color: #888; margin-top: 3px; }
 
-        /* --- Права колонка (Чат) --- */
-        #chat-area { flex-grow: 1; background: #0e1621; display: flex; flex-direction: column; position: relative; width: 100%; }
-        
-        /* Шапка чату */
-        #chat-header { padding: 0 15px; background: #212121; color: white; border-bottom: 1px solid #0f0f0f; font-weight: bold; height: 60px; display: flex; align-items: center; }
-        
-        /* Кнопка "Назад" (за замовчуванням прихована) */
-        #back-btn { display: none; background: none; border: none; color: white; font-size: 24px; margin-right: 15px; cursor: pointer; padding: 0; }
+        /* === ПРАВА КОЛОНКА (ЧАТ) === */
+        #chat-area { 
+            flex-grow: 1; 
+            background: #0e1621; 
+            display: flex; 
+            flex-direction: column; 
+            position: relative; 
+            min-width: 0; /* Важливо для Flexbox, щоб текст не розтягував блок */
+        }
 
-        /* Повідомлення */
-        #messages { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background-image: url('https://web.telegram.org/img/bg_0.png'); background-size: cover; }
-        
-        .message { max-width: 80%; padding: 8px 12px; border-radius: 12px; color: white; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; }
+        #chat-header { 
+            padding: 0 15px; background: #212121; color: white; 
+            border-bottom: 1px solid #0f0f0f; font-weight: bold; height: 60px; 
+            display: flex; align-items: center; flex-shrink: 0;
+        }
+
+        #back-btn { display: none; background: none; border: none; color: white; font-size: 24px; margin-right: 15px; cursor: pointer; padding: 5px; }
+
+        #messages { 
+            flex-grow: 1; padding: 15px; overflow-y: auto; 
+            display: flex; flex-direction: column; gap: 8px; 
+            background-image: url('https://web.telegram.org/img/bg_0.png'); 
+            background-size: cover; 
+            background-position: center;
+        }
+
+        .message { max-width: 85%; padding: 10px 14px; border-radius: 12px; color: white; font-size: 15px; line-height: 1.4; position: relative; word-wrap: break-word; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
         .message.my { background: #2b5278; align-self: flex-end; border-bottom-right-radius: 0; }
         .message.other { background: #182533; align-self: flex-start; border-bottom-left-radius: 0; }
-        .msg-author { font-size: 11px; color: #7faccc; margin-bottom: 4px; display: block; opacity: 0.8; }
+        
+        #input-area { padding: 10px; background: #212121; display: flex; gap: 10px; align-items: center; flex-shrink: 0; }
+        #input-area input { flex-grow: 1; padding: 12px 20px; border-radius: 25px; border: none; background: #0e1621; color: white; font-size: 16px; outline: none; }
+        #input-area button { background: #0088cc; color: white; border: none; width: 45px; height: 45px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 20px; flex-shrink: 0; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
 
-        /* Поле вводу */
-        #input-area { padding: 10px; background: #212121; display: flex; gap: 10px; align-items: center; }
-        #input-area input { flex-grow: 1; padding: 10px 15px; border-radius: 20px; border: none; background: #0e1621; color: white; font-size: 16px; outline: none; }
-        #input-area button { background: #0088cc; color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center; font-size: 18px; flex-shrink: 0; }
+        #empty-chat { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #777; font-size: 14px; background: rgba(0,0,0,0.2); padding: 10px 20px; border-radius: 20px; }
 
-        /* Текст "Виберіть чат" */
-        #empty-chat { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #777; text-align: center; width: 80%; }
-
-        /* --- АДАПТАЦІЯ ДЛЯ МОБІЛЬНИХ (CSS Media Queries) --- */
-        @media (max-width: 768px) {
-            #sidebar { width: 100%; position: absolute; height: 100%; z-index: 10; }
-            #chat-area { width: 100%; position: absolute; height: 100%; z-index: 5; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+        /* === АДАПТАЦІЯ ДЛЯ ТЕЛЕФОНІВ (Виправлена логіка) === */
+        @media (max-width: 850px) {
+            #sidebar { width: 100%; } /* На мобільному сайдбар на всю ширину */
+            #chat-area { width: 100%; } /* Чат теж на всю ширину */
             
-            /* Коли клас .chat-open додано до #app, показуємо чат і ховаємо список */
-            #app.chat-open #sidebar { transform: translateX(-20%); opacity: 0; pointer-events: none; z-index: 5; }
-            #app.chat-open #chat-area { opacity: 1; pointer-events: auto; z-index: 10; transform: translateX(0); }
+            /* Логіка перемикання через display: none, а не position: absolute */
             
-            #back-btn { display: block; } /* Показуємо кнопку назад */
-            #empty-chat { display: none !important; } /* Ховаємо підказку на мобільному */
+            /* Стан 1: Чат закритий (показуємо список) */
+            #app:not(.chat-open) #sidebar { display: flex; }
+            #app:not(.chat-open) #chat-area { display: none; }
+
+            /* Стан 2: Чат відкритий (ховаємо список) */
+            #app.chat-open #sidebar { display: none; }
+            #app.chat-open #chat-area { display: flex; }
+
+            #back-btn { display: block; }
+            #empty-chat { display: none !important; } 
         }
     </style>
 </head>
@@ -71,16 +114,16 @@
 
     <div id="login-screen">
         <div class="login-box">
-            <h2>Вхід</h2>
-            <p style="font-size: 14px; color: #aaa;">Введіть ім'я для чату</p>
+            <h2>👋 Привіт!</h2>
+            <p style="color: #aaa; margin-bottom: 20px;">Як вас звати в чаті?</p>
             <input type="text" id="username-input" placeholder="Ваше ім'я..." autocomplete="off">
-            <button onclick="login()">Почати спілкування</button>
+            <button onclick="login()">Увійти</button>
         </div>
     </div>
 
     <div id="app">
         <div id="sidebar">
-            <div class="sidebar-header">Користувачі онлайн</div>
+            <div class="sidebar-header">Чати</div>
             <ul id="user-list"></ul>
         </div>
 
@@ -90,7 +133,7 @@
                 <span id="chat-title">Чат</span>
             </div>
 
-            <div id="empty-chat">⬅ Виберіть користувача з меню зліва</div>
+            <div id="empty-chat">Виберіть чат зліва</div>
             
             <div id="messages" style="display: none;"></div>
 
@@ -103,7 +146,7 @@
 
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <script>
-        // !!! ТВОЄ ПОСИЛАННЯ З REPLIT !!!
+        // Встав своє посилання
         const REPLIT_URL = "https://6a216fcf-12cf-4fac-8b1d-97739aabb946-00-33ambi0sfbjo6.spock.replit.dev";
         
         const socket = io(REPLIT_URL);
@@ -112,7 +155,6 @@
         let currentChatUser = null;
         let chats = {};
 
-        // === Логіка входу ===
         function login() {
             const input = document.getElementById('username-input');
             const name = input.value.trim();
@@ -127,11 +169,14 @@
             document.getElementById('app').style.display = 'flex';
         });
 
-        // === Список користувачів ===
         socket.on('update user list', (users) => {
             const list = document.getElementById('user-list');
             list.innerHTML = "";
             
+            if(users.length <= 1) {
+                list.innerHTML = `<div style="padding: 20px; color: #777; text-align: center;">Поки що нікого немає...<br>Зачекайте друга!</div>`;
+            }
+
             users.forEach(user => {
                 if (user === myNickname) return;
 
@@ -139,7 +184,10 @@
                 const initial = user.charAt(0).toUpperCase();
                 li.innerHTML = `
                     <div class="avatar">${initial}</div>
-                    <div class="user-name">${user}</div>
+                    <div class="user-info">
+                        <div class="user-name">${user}</div>
+                        <div class="user-status">У мережі</div>
+                    </div>
                 `;
                 
                 li.onclick = () => openChat(user, li);
@@ -147,36 +195,30 @@
             });
         });
 
-        // === Мобільна навігація ===
         function openChat(user, element) {
             currentChatUser = user;
             
-            // Інтерфейс
             document.getElementById('chat-title').innerText = user;
             document.getElementById('empty-chat').style.display = 'none';
             document.getElementById('messages').style.display = 'flex';
             document.getElementById('input-area').style.display = 'flex';
 
-            // Підсвітка активного (для десктопу)
             document.querySelectorAll('#user-list li').forEach(el => el.classList.remove('active'));
             if(element) element.classList.add('active');
 
-            // !!! ДЛЯ МОБІЛЬНИХ: Перемикаємо вигляд на чат
+            // Відкриваємо чат на мобільному
             document.getElementById('app').classList.add('chat-open');
 
             renderMessages();
         }
 
         function closeChat() {
-            // !!! ДЛЯ МОБІЛЬНИХ: Повертаємося до списку
+            // Закриваємо чат на мобільному
             document.getElementById('app').classList.remove('chat-open');
             currentChatUser = null;
-            
-            // Скидаємо виділення на десктопі
             document.querySelectorAll('#user-list li').forEach(el => el.classList.remove('active'));
         }
 
-        // === Чат ===
         function renderMessages() {
             const messagesDiv = document.getElementById('messages');
             messagesDiv.innerHTML = "";
@@ -206,7 +248,6 @@
 
                 renderMessages();
                 input.value = '';
-                // На мобільному залишаємо клавіатуру відкритою (фокус)
                 input.focus();
             }
         });
@@ -218,11 +259,9 @@
             if (currentChatUser === from) {
                 renderMessages();
             } else {
-                // Можна додати вібрацію для телефону
                 if(navigator.vibrate) navigator.vibrate(200);
             }
         });
-
     </script>
 </body>
 </html>
