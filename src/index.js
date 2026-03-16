@@ -60,6 +60,6 @@ setInterval(() => {
     }
 }, 15000);
 
-httpServer.listen(3000, '192.168.0.249', () => {
+httpServer.listen(3000, '0.0.0.0', () => {
     console.log("SERVER ONLINE | Auto-save: 15s");
 });
